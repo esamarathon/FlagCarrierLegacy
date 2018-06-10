@@ -41,14 +41,12 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void showSettings() {
-        Intent intent = new Intent();
-        intent.setClassName(this, SettingsActivity.class.getName());
+        Intent intent = new Intent(this, SettingsActivity.class);
         startActivity(intent);
     }
 
     private void showWriteTag() {
-        Intent intent = new Intent();
-        intent.setClassName(this, WriteTagActivity.class.getName());
+        Intent intent = new Intent(this, WriteTagActivity.class);
         startActivity(intent);
     }
 }
