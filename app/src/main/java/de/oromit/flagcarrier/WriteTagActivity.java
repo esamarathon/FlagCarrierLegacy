@@ -171,7 +171,7 @@ public class WriteTagActivity extends AppCompatActivity {
                 NdefRecord.createMime("application/vnd.de.oromit.flagcarrier", data)
         });
 
-        Toast.makeText(this, "Scan tag now!", Toast.LENGTH_SHORT).show();
+        Toast.makeText(this, "Scan tag now!", Toast.LENGTH_LONG).show();
     }
 
     @Override
@@ -280,7 +280,7 @@ public class WriteTagActivity extends AppCompatActivity {
 
             int size = mWriteMsg.toByteArray().length;
             if(ndef.getMaxSize() < size) {
-                Toast.makeText(this, "Tag is too small.", Toast.LENGTH_LONG).show();
+                Toast.makeText(this, "Tag is too small: " + size + "/" + ndef.getMaxSize(), Toast.LENGTH_LONG).show();
                 return;
             }
 
