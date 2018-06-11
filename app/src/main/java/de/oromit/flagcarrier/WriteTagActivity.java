@@ -19,6 +19,7 @@ import android.widget.Toast;
 import com.hbb20.CountryCodePicker;
 
 import java.io.ByteArrayOutputStream;
+import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.Charset;
@@ -110,25 +111,19 @@ public class WriteTagActivity extends AppCompatActivity {
 
     private byte[] generateRawData(Map<String, String> kvMap) {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        DataOutputStream dos = new DataOutputStream(baos);
 
         try {
-            for (HashMap.Entry<String, String> entry : kvMap.entrySet()) {
+            for (Map.Entry<String, String> entry : kvMap.entrySet()) {
                 String k = entry.getKey().trim();
                 String v = entry.getValue().trim();
                 if(v.isEmpty())
                     continue;
-                if (k.length() > 255 || v.length() > 255) {
-                    Toast.makeText(this, "Invalid length!", Toast.LENGTH_SHORT).show();
-                    return null;
-                }
-                baos.write((byte) k.length());
-                baos.write((byte) v.length());
-                baos.write(k.getBytes("UTF-8"));
-                baos.write(v.getBytes("UTF-8"));
+                dos.writeUTF(k);
+                dos.writeUTF(v);
             }
-        } catch (UnsupportedEncodingException e) {
-            Toast.makeText(this, "UTF-8 is somehow unsupported.", Toast.LENGTH_SHORT).show();
-            return null;
+
+            dos.flush();
         } catch (IOException e) {
             Toast.makeText(this, "IOException", Toast.LENGTH_SHORT).show();
             return null;
@@ -167,8 +162,8 @@ public class WriteTagActivity extends AppCompatActivity {
         byte[] data = compressRawData(rawData);
 
         mWriteMsg = new NdefMessage(new NdefRecord[] {
-                NdefRecord.createApplicationRecord("de.oromit.flagcarrier"),
-                NdefRecord.createMime("application/vnd.de.oromit.flagcarrier", data)
+                NdefRecord.createMime("application/vnd.de.oromit.flagcarrier", data),
+                NdefRecord.createApplicationRecord("de.oromit.flagcarrier")
         });
 
         Toast.makeText(this, "Scan tag now!", Toast.LENGTH_LONG).show();

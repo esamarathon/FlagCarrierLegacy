@@ -8,7 +8,10 @@
     <string name="initial_greeting">Scan Tag!</string>
     <string name="write_tag">Write Tag</string>
     <string name="write_tag_title">Write Tag</string>
-
+    <string name="login_title">Login</string>
+    <string name="clear_button">Clear</string>
+    <string name="clear_conf_title">Clear?</string>
+    <string name="clear_confirmation">This will clear the currently logged in users. Are you sure?</string>
     <string name="wt_disp_name">Display Name</string>
     <string name="wt_country">Country</string>
     <string name="wt_speedruncom">speedrun.com Name</string>
@@ -16,4 +19,7 @@
     <string name="wt_twitter">Twitter Handle</string>
     <string name="wt_extra_data">Extra data (lines of key=value)</string>
     <string name="wt_write_tag_button">Write Tag</string>
+    <string name="left_button">Left</string>
+    <string name="mid_button">Middle</string>
+    <string name="right_button">Right</string>
 </resources>
