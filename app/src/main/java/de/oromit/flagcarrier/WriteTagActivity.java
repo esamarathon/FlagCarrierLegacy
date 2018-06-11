@@ -21,8 +21,6 @@ import com.hbb20.CountryCodePicker;
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
-import java.nio.charset.Charset;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.zip.Deflater;
@@ -79,11 +77,11 @@ public class WriteTagActivity extends AppCompatActivity {
             return null;
         }
 
-        kvMap.put("dsplname", dsplname);
-        kvMap.put("cntrcode", getCountryCode());
-        kvMap.put("srcmname", getFieldText(R.id.speedrunNameText).trim());
-        kvMap.put("twchname", getFieldText(R.id.twitchNameText).trim());
-        kvMap.put("twtrhndl", getFieldText(R.id.twitterHandleText).trim());
+        kvMap.put("display_name", dsplname);
+        kvMap.put("country_code", getCountryCode());
+        kvMap.put("speedruncom_name", getFieldText(R.id.speedrunNameText).trim());
+        kvMap.put("twitch_name", getFieldText(R.id.twitchNameText).trim());
+        kvMap.put("twitter_handle", getFieldText(R.id.twitterHandleText).trim());
 
         String extra = getFieldText(R.id.extraDataText);
         for(String line: extra.split("\n")) {
@@ -214,7 +212,6 @@ public class WriteTagActivity extends AppCompatActivity {
             int tech = getPreferredTech(tag);
             if(tech < 0) {
                 Toast.makeText(this, "Unsupported tag", Toast.LENGTH_LONG).show();
-                return;
             } else {
                 writeTag(tag);
             }
@@ -249,6 +246,7 @@ public class WriteTagActivity extends AppCompatActivity {
             try {
                 ndef.close();
             } catch (Exception e) {
+                Toast.makeText(this, "Close failed", Toast.LENGTH_LONG).show();
             }
         }
     }
@@ -288,6 +286,7 @@ public class WriteTagActivity extends AppCompatActivity {
             try {
                 ndef.close();
             } catch (Exception e) {
+                Toast.makeText(this, "Close failed", Toast.LENGTH_LONG).show();
             }
         }
     }
