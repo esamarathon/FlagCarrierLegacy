@@ -9,14 +9,22 @@ import android.nfc.NfcAdapter;
 import android.nfc.Tag;
 import android.nfc.tech.Ndef;
 import android.nfc.tech.NdefFormatable;
-import android.nfc.tech.NfcA;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.Toast;
 
+import com.hbb20.CountryCodePicker;
+
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.nio.charset.Charset;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.zip.Deflater;
 
 public class WriteTagActivity extends AppCompatActivity {
     private NfcAdapter mAdapter;
@@ -49,15 +57,118 @@ public class WriteTagActivity extends AppCompatActivity {
         };
     }
 
+    private String getFieldText(int id) {
+        EditText e = findViewById(id);
+        return e.getText().toString();
+    }
+
+    private String getCountryCode() {
+        CountryCodePicker ccp = findViewById(R.id.countryCodePicker);
+        return ccp.getSelectedCountryNameCode();
+    }
+
+    private Map<String, String> getValidatedDataMap() {
+        Map<String, String> kvMap = new HashMap<>();
+
+        String dsplname = getFieldText(R.id.displayNameText).trim();
+
+        if(dsplname.isEmpty()) {
+            Toast.makeText(this, "A display name is required", Toast.LENGTH_SHORT).show();
+            mWriteMsg = null;
+            return null;
+        }
+
+        kvMap.put("dsplname", dsplname);
+        kvMap.put("cntrcode", getCountryCode());
+        kvMap.put("srcmname", getFieldText(R.id.speedrunNameText).trim());
+        kvMap.put("twchname", getFieldText(R.id.twitchNameText).trim());
+        kvMap.put("twtrhndl", getFieldText(R.id.twitterHandleText).trim());
+
+        String extra = getFieldText(R.id.extraDataText);
+        for(String line: extra.split("\n")) {
+            line = line.trim();
+            if(line.isEmpty())
+                continue;
+            String[] parts = line.split("=", 2);
+            if(parts.length != 2) {
+                Toast.makeText(this, "Invalid extra data", Toast.LENGTH_SHORT).show();
+                return null;
+            }
+            if(parts[0].length() > 16) {
+                Toast.makeText(this, "Extra data key length > 16", Toast.LENGTH_SHORT).show();
+                return null;
+            }
+            if(parts[1].length() > 254) {
+                Toast.makeText(this, "Extra data value length > 254", Toast.LENGTH_SHORT).show();
+                return null;
+            }
+            kvMap.put(parts[0], parts[1]);
+        }
+
+        return kvMap;
+    }
+
+    private byte[] generateRawData(Map<String, String> kvMap) {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+
+        try {
+            for (HashMap.Entry<String, String> entry : kvMap.entrySet()) {
+                String k = entry.getKey().trim();
+                String v = entry.getValue().trim();
+                if(v.isEmpty())
+                    continue;
+                if (k.length() > 255 || v.length() > 255) {
+                    Toast.makeText(this, "Invalid length!", Toast.LENGTH_SHORT).show();
+                    return null;
+                }
+                baos.write((byte) k.length());
+                baos.write((byte) v.length());
+                baos.write(k.getBytes("UTF-8"));
+                baos.write(v.getBytes("UTF-8"));
+            }
+        } catch (UnsupportedEncodingException e) {
+            Toast.makeText(this, "UTF-8 is somehow unsupported.", Toast.LENGTH_SHORT).show();
+            return null;
+        } catch (IOException e) {
+            Toast.makeText(this, "IOException", Toast.LENGTH_SHORT).show();
+            return null;
+        }
+
+        return baos.toByteArray();
+    }
+
+    private byte[] compressRawData(byte[] rawData) {
+        Deflater d = new Deflater(9);
+        d.setInput(rawData);
+        d.finish();
+
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+
+        byte[] buf = new byte[256];
+        while(!d.finished()) {
+            int n = d.deflate(buf);
+            baos.write(buf, 0, n);
+        }
+
+        d.end();
+
+        return baos.toByteArray();
+    }
+
     public void onDoWriteTag(View v) {
+        mWriteMsg = null;
 
+        Map<String, String> kvMap = getValidatedDataMap();
+        if(kvMap == null)
+            return;
 
-        String recData = "blabla hahahahaha";
+        byte[] rawData = generateRawData(kvMap);
+
+        byte[] data = compressRawData(rawData);
 
         mWriteMsg = new NdefMessage(new NdefRecord[] {
                 NdefRecord.createApplicationRecord("de.oromit.flagcarrier"),
-                NdefRecord.createMime("application/vnd.de.oromit.flagcarrier",
-                        recData.getBytes(Charset.forName("UTF-8")))
+                NdefRecord.createMime("application/vnd.de.oromit.flagcarrier", data)
         });
 
         Toast.makeText(this, "Scan tag now!", Toast.LENGTH_SHORT).show();
