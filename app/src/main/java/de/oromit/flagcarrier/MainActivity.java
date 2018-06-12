@@ -22,20 +22,21 @@ import java.io.IOException;
 import okhttp3.Call;
 import okhttp3.Callback;
 import okhttp3.MediaType;
-import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
 import okhttp3.ResponseBody;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements Callback {
     private static final MediaType JSON = MediaType.parse("application/json; charset=utf-8");
-    OkHttpClient httpClient = new OkHttpClient();
+    HttpManager httpManager;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        httpManager = new HttpManager(this, this);
 
         Button clearButton = findViewById(R.id.clearButton);
         clearButton.setOnClickListener(v->onClear());
@@ -104,69 +105,39 @@ public class MainActivity extends AppCompatActivity {
         if(i != DialogInterface.BUTTON_POSITIVE)
             return;
 
-        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
-        String url = prefs.getString("target_url", null);
-        String device_id = prefs.getString("device_id", "");
-        String group_id = prefs.getString("group_id", "");
-
-        if(url == null || url.trim().isEmpty()) {
-            Toast.makeText(this, "No URL set!", Toast.LENGTH_LONG).show();
+        try {
+            httpManager.doRequest("clear", null);
+        } catch(HttpManager.HttpManagerException e) {
+            Toast.makeText(this, e.getMessage(), Toast.LENGTH_LONG).show();
+        } catch(HttpManager.MissingSettingException e) {
+            Toast.makeText(this, e.getMessage(), Toast.LENGTH_LONG).show();
             Intent intent = new Intent(this, SettingsActivity.class);
             startActivity(intent);
-            return;
         }
-
-        String jsonText;
-
-        try {
-            JSONObject json = new JSONObject();
-            json.put("device_id", device_id);
-            json.put("group_id", group_id);
-            json.put("position", "all");
-            json.put("action", "clear");
-
-            jsonText = json.toString();
-        } catch (JSONException e) {
-            Toast.makeText(this, "JSONException", Toast.LENGTH_LONG).show();
-            return;
-        }
-
-        postJson(url, jsonText);
     }
 
-    void postJson(String url, String json) {
-        RequestBody body = RequestBody.create(JSON, json);
-        Request req = new Request.Builder()
-                .url(url)
-                .post(body)
-                .build();
+    @Override
+    public void onFailure(Call call, IOException e) {
+        runOnUiThread(()->
+                Toast.makeText(this, "Request failed: " + e.getMessage(), Toast.LENGTH_LONG).show()
+        );
+    }
 
-        httpClient.newCall(req)
-                .enqueue(new Callback() {
-                    @Override
-                    public void onFailure(Call call, IOException e) {
-                        runOnUiThread(() -> {
-                            Toast.makeText(MainActivity.this, "Request failed", Toast.LENGTH_LONG).show();
-                        });
-                    }
+    @Override
+    public void onResponse(Call call, Response response) throws IOException {
+        ResponseBody body = response.body();
+        if (body == null)
+            return;
 
-                    @Override
-                    public void onResponse(Call call, Response response) throws IOException {
-                        ResponseBody body = response.body();
-                        if (body == null)
-                            return;
+        final String res;
+        int code = response.code();
 
-                        final String res;
-                        int code = response.code();
+        if (code != 200) {
+            res = "Error " + code + ": " + body.string().trim();
+        } else {
+            res = body.string().trim();
+        }
 
-                        if (code != 200) {
-                            res = "Error " + code + ": " + body.string().trim();
-                        } else {
-                            res = body.string().trim();
-                        }
-
-                        runOnUiThread(() -> Toast.makeText(MainActivity.this, res, Toast.LENGTH_LONG).show());
-                    }
-                });
+        runOnUiThread(() -> Toast.makeText(MainActivity.this, res, Toast.LENGTH_LONG).show());
     }
 }

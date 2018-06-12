@@ -62,11 +62,13 @@ class HttpManager {
             json.put("device_id", device_id);
             json.put("group_id", group_id);
 
-            for (Map.Entry<String, String> entry : tagData.entrySet()) {
-                tag_data.put(entry.getKey(), entry.getValue());
-            }
+            if(tagData != null) {
+                for (Map.Entry<String, String> entry : tagData.entrySet()) {
+                    tag_data.put(entry.getKey(), entry.getValue());
+                }
 
-            json.put("tag_data", tag_data);
+                json.put("tag_data", tag_data);
+            }
 
             return json;
         } catch(JSONException e) {

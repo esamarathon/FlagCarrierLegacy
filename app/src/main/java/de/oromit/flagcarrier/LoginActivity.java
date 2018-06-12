@@ -133,11 +133,11 @@ public class LoginActivity extends AppCompatActivity implements Callback {
 
         if(code != 200) {
             runOnUiThread(()->
-                    Toast.makeText(LoginActivity.this, "Error " + code + ": " + res, Toast.LENGTH_LONG).show()
+                    Toast.makeText(this, "Error " + code + ": " + res, Toast.LENGTH_LONG).show()
             );
         } else {
             runOnUiThread(()->{
-                Toast.makeText(LoginActivity.this, res, Toast.LENGTH_LONG).show();
+                Toast.makeText(this, res, Toast.LENGTH_LONG).show();
                 backToMain();
             });
         }
