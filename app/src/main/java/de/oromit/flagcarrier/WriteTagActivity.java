@@ -107,47 +107,6 @@ public class WriteTagActivity extends AppCompatActivity {
         return kvMap;
     }
 
-    private byte[] generateRawData(Map<String, String> kvMap) {
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        DataOutputStream dos = new DataOutputStream(baos);
-
-        try {
-            for (Map.Entry<String, String> entry : kvMap.entrySet()) {
-                String k = entry.getKey().trim();
-                String v = entry.getValue().trim();
-                if(v.isEmpty())
-                    continue;
-                dos.writeUTF(k);
-                dos.writeUTF(v);
-            }
-
-            dos.flush();
-        } catch (IOException e) {
-            Toast.makeText(this, "IOException", Toast.LENGTH_SHORT).show();
-            return null;
-        }
-
-        return baos.toByteArray();
-    }
-
-    private byte[] compressRawData(byte[] rawData) {
-        Deflater d = new Deflater(9);
-        d.setInput(rawData);
-        d.finish();
-
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-
-        byte[] buf = new byte[256];
-        while(!d.finished()) {
-            int n = d.deflate(buf);
-            baos.write(buf, 0, n);
-        }
-
-        d.end();
-
-        return baos.toByteArray();
-    }
-
     public void onDoWriteTag(View v) {
         mWriteMsg = null;
 
@@ -155,16 +114,12 @@ public class WriteTagActivity extends AppCompatActivity {
         if(kvMap == null)
             return;
 
-        byte[] rawData = generateRawData(kvMap);
-
-        byte[] data = compressRawData(rawData);
-
-        mWriteMsg = new NdefMessage(new NdefRecord[] {
-                NdefRecord.createMime("application/vnd.de.oromit.flagcarrier", data),
-                NdefRecord.createApplicationRecord("de.oromit.flagcarrier")
-        });
-
-        Toast.makeText(this, "Scan tag now!", Toast.LENGTH_LONG).show();
+        try {
+            mWriteMsg = TagManager.generateMessage(kvMap);
+            Toast.makeText(this, "Scan tag now!", Toast.LENGTH_LONG).show();
+        } catch(TagManager.TagManagerException e) {
+            Toast.makeText(this, e.getMessage(), Toast.LENGTH_LONG).show();
+        }
     }
 
     @Override
@@ -191,16 +146,6 @@ public class WriteTagActivity extends AppCompatActivity {
             mAdapter.disableForegroundDispatch(this);
     }
 
-    private static int getPreferredTech(Tag tag) {
-        for(String s: tag.getTechList()) {
-            if(s.equals("android.nfc.tech.NdefFormatable"))
-                return 0;
-            else if(s.equals("android.nfc.tech.Ndef"))
-                return 1;
-        }
-        return -1;
-    }
-
     @Override
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
@@ -209,84 +154,11 @@ public class WriteTagActivity extends AppCompatActivity {
                 || NfcAdapter.ACTION_NDEF_DISCOVERED.equals(a)
                 || NfcAdapter.ACTION_TECH_DISCOVERED.equals(a)) {
             Tag tag = intent.getParcelableExtra(NfcAdapter.EXTRA_TAG);
-            int tech = getPreferredTech(tag);
-            if(tech < 0) {
-                Toast.makeText(this, "Unsupported tag", Toast.LENGTH_LONG).show();
-            } else {
-                writeTag(tag);
-            }
-        }
-    }
-
-    private void formatWriteTag(Tag tag) {
-        if(mWriteMsg == null) {
-            Toast.makeText(this, "No data to write!", Toast.LENGTH_LONG).show();
-            return;
-        }
-
-        NdefFormatable ndef = NdefFormatable.get(tag);
-        if(ndef == null) {
-            Toast.makeText(this, "Not Ndef formatable", Toast.LENGTH_LONG).show();
-            return;
-        }
-
-        try {
-            ndef.connect();
-
             try {
-                ndef.format(mWriteMsg);
+                TagManager.writeToTag(tag, mWriteMsg);
                 Toast.makeText(this, "Success", Toast.LENGTH_LONG).show();
-                mWriteMsg = null;
-            } catch (Exception e) {
-                Toast.makeText(this, "Format failed", Toast.LENGTH_LONG).show();
-            }
-        } catch (Exception e) {
-            Toast.makeText(this, "Connect failed", Toast.LENGTH_LONG).show();
-        } finally {
-            try {
-                ndef.close();
-            } catch (Exception e) {
-                Toast.makeText(this, "Close failed", Toast.LENGTH_LONG).show();
-            }
-        }
-    }
-
-    private void writeTag(Tag tag) {
-        if(mWriteMsg == null) {
-            Toast.makeText(this, "No data to write!", Toast.LENGTH_LONG).show();
-            return;
-        }
-
-        Ndef ndef = Ndef.get(tag);
-        if(ndef == null) {
-            formatWriteTag(tag);
-            return;
-        }
-
-        try {
-            ndef.connect();
-
-            if(!ndef.isWritable()) {
-                Toast.makeText(this, "Tag is not writable", Toast.LENGTH_LONG).show();
-                return;
-            }
-
-            int size = mWriteMsg.toByteArray().length;
-            if(ndef.getMaxSize() < size) {
-                Toast.makeText(this, "Tag is too small: " + size + "/" + ndef.getMaxSize(), Toast.LENGTH_LONG).show();
-                return;
-            }
-
-            ndef.writeNdefMessage(mWriteMsg);
-            Toast.makeText(this, "Success", Toast.LENGTH_LONG).show();
-            mWriteMsg = null;
-        } catch (Exception e) {
-            Toast.makeText(this, "Writing ndef failed", Toast.LENGTH_LONG).show();
-        } finally {
-            try {
-                ndef.close();
-            } catch (Exception e) {
-                Toast.makeText(this, "Close failed", Toast.LENGTH_LONG).show();
+            } catch(TagManager.TagManagerException e) {
+                Toast.makeText(this, e.getMessage(), Toast.LENGTH_LONG).show();
             }
         }
     }
