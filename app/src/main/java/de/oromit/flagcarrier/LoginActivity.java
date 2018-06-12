@@ -18,12 +18,10 @@ import java.util.Map;
 
 import okhttp3.Call;
 import okhttp3.Callback;
-import okhttp3.MediaType;
 import okhttp3.Response;
 import okhttp3.ResponseBody;
 
 public class LoginActivity extends AppCompatActivity implements Callback {
-    private static final MediaType JSON = MediaType.parse("application/json; charset=utf-8");
     HttpManager httpManager;
     Map<String, String> tagData;
 
