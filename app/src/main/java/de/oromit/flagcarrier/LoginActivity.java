@@ -9,6 +9,7 @@ import android.preference.PreferenceManager;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.widget.Button;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -35,14 +36,32 @@ public class LoginActivity extends AppCompatActivity implements Callback {
 
         httpManager = new HttpManager(this, this);
 
-        Button b = findViewById(R.id.leftButton);
-        b.setOnClickListener(v -> onDoLogin("left"));
-        b=findViewById(R.id.midButton);
-        b.setOnClickListener(v -> onDoLogin("mid"));
-        b=findViewById(R.id.rightButton);
-        b.setOnClickListener(v -> onDoLogin("right"));
-
+        populateButtons();
         parseIntent();
+    }
+
+    private void populateButtons() {
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
+        LinearLayout layout = findViewById(R.id.buttonLayout);
+        layout.removeAllViews();
+
+        String[] pos_avail = prefs.getString("pos_avail", "left,mid,right").split(",");
+
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                1.0f
+        );
+
+        for(String pos: pos_avail) {
+            Button button = new Button(this);
+            button.setText(pos);
+            button.setLayoutParams(params);
+
+            button.setOnClickListener((v)->onDoLogin(pos));
+
+            layout.addView(button);
+        }
     }
 
     private void parseIntent() {

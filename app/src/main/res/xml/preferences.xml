@@ -10,7 +10,7 @@
         android:singleLine="true"
         android:title="@string/target_url_setting_name" />
     <EditTextPreference
-        android:defaultValue="Left,Mid,Right"
+        android:defaultValue="left,lid,right"
         android:key="pos_avail"
         android:selectAllOnFocus="true"
         android:singleLine="true"

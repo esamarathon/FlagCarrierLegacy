@@ -76,12 +76,16 @@ class HttpManager {
         }
     }
 
-    private void postJson(String url, JSONObject json) {
-        RequestBody body = RequestBody.create(JSON, json.toString());
-        Request req = new Request.Builder()
-                .url(url)
-                .post(body)
-                .build();
-        mHttpClient.newCall(req).enqueue(mCallback);
+    private void postJson(String url, JSONObject json) throws HttpManagerException {
+        try {
+            RequestBody body = RequestBody.create(JSON, json.toString());
+            Request req = new Request.Builder()
+                    .url(url)
+                    .post(body)
+                    .build();
+            mHttpClient.newCall(req).enqueue(mCallback);
+        } catch(IllegalArgumentException e) {
+            throw new HttpManagerException("Invalid request: " + e.getMessage());
+        }
     }
 }
