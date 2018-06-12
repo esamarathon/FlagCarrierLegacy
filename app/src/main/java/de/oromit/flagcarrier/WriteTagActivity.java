@@ -93,12 +93,12 @@ public class WriteTagActivity extends AppCompatActivity {
                 Toast.makeText(this, "Invalid extra data", Toast.LENGTH_SHORT).show();
                 return null;
             }
-            if(parts[0].length() > 16) {
-                Toast.makeText(this, "Extra data key length > 16", Toast.LENGTH_SHORT).show();
+            if(parts[0].length() > 32) {
+                Toast.makeText(this, "Extra data key length > 32", Toast.LENGTH_SHORT).show();
                 return null;
             }
-            if(parts[1].length() > 254) {
-                Toast.makeText(this, "Extra data value length > 254", Toast.LENGTH_SHORT).show();
+            if(parts[1].length() > 255) {
+                Toast.makeText(this, "Extra data value length > 255", Toast.LENGTH_SHORT).show();
                 return null;
             }
             kvMap.put(parts[0], parts[1]);
@@ -116,7 +116,7 @@ public class WriteTagActivity extends AppCompatActivity {
 
         try {
             mWriteMsg = TagManager.generateMessage(kvMap);
-            Toast.makeText(this, "Scan tag now!", Toast.LENGTH_LONG).show();
+            Toast.makeText(this, "Scan tag now!", Toast.LENGTH_SHORT).show();
         } catch(TagManager.TagManagerException e) {
             Toast.makeText(this, e.getMessage(), Toast.LENGTH_LONG).show();
         }
@@ -156,6 +156,7 @@ public class WriteTagActivity extends AppCompatActivity {
             Tag tag = intent.getParcelableExtra(NfcAdapter.EXTRA_TAG);
             try {
                 TagManager.writeToTag(tag, mWriteMsg);
+                mWriteMsg = null;
                 Toast.makeText(this, "Success", Toast.LENGTH_LONG).show();
             } catch(TagManager.TagManagerException e) {
                 Toast.makeText(this, e.getMessage(), Toast.LENGTH_LONG).show();
