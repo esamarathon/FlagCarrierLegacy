@@ -1,9 +1,11 @@
 package de.oromit.flagcarrier;
 
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.nfc.NdefMessage;
 import android.nfc.NfcAdapter;
 import android.os.Parcelable;
+import android.preference.PreferenceManager;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.widget.Button;
@@ -58,6 +60,7 @@ public class LoginActivity extends AppCompatActivity implements Callback {
             try {
                 tagData = TagManager.parseMessage(msg);
                 updateTextView();
+                checkForSettings();
             } catch(TagManager.TagManagerException e) {
                 Toast.makeText(this, e.getMessage(), Toast.LENGTH_LONG).show();
                 backToMain();
@@ -141,6 +144,47 @@ public class LoginActivity extends AppCompatActivity implements Callback {
                 backToMain();
             });
         }
+    }
+
+    private void checkForSettings() {
+        final String display_name = "display_name";
+        final String trigger_dsp_name = "set";
+        final String trigger_name = "set";
+
+        if(!tagData.containsKey(display_name))
+            return;
+
+        if(!tagData.get(display_name).equals(trigger_dsp_name))
+            return;
+
+        if(!tagData.containsKey(trigger_name))
+            return;
+
+        String set = tagData.get(trigger_name);
+        String[] settings = set.split(",");
+
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
+        SharedPreferences.Editor edit = prefs.edit();
+
+        StringBuilder resTxt = new StringBuilder();
+        resTxt.append("Applied settings:\n");
+
+        for(String setting: settings) {
+            if(!tagData.containsKey(setting)) {
+                Toast.makeText(this, "Malformed settings: " + setting + " missing on tag", Toast.LENGTH_LONG).show();
+                backToMain();
+                return;
+            }
+
+            String val = tagData.get(setting);
+            edit.putString(setting, val);
+            resTxt.append(setting).append("=").append(val).append("\n");
+        }
+
+        edit.apply();
+
+        Toast.makeText(this, resTxt.toString().trim(), Toast.LENGTH_LONG).show();
+        backToMain();
     }
 
     private void backToMain() {
