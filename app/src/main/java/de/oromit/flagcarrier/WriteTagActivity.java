@@ -3,11 +3,17 @@ package de.oromit.flagcarrier;
 import android.app.PendingIntent;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.nfc.NdefMessage;
 import android.nfc.NfcAdapter;
 import android.nfc.Tag;
+import android.preference.PreferenceManager;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.text.TextUtils;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -17,6 +23,7 @@ import com.hbb20.CountryCodePicker;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 public class WriteTagActivity extends AppCompatActivity {
     private NfcAdapter mAdapter;
@@ -49,9 +56,61 @@ public class WriteTagActivity extends AppCompatActivity {
         };
     }
 
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        MenuInflater inflater = getMenuInflater();
+        inflater.inflate(R.menu.write_menu, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch(item.getItemId()) {
+            case R.id.fillSetOption:
+                fillWithSettings();
+                return true;
+            default:
+                return super.onOptionsItemSelected(item);
+        }
+    }
+
+    private void fillWithSettings() {
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
+
+        setFieldText(R.id.displayNameText, "set");
+        setFieldText(R.id.speedrunNameText, "");
+        setFieldText(R.id.twitchNameText, "");
+        setFieldText(R.id.twitterHandleText, "");
+
+        StringBuilder bldr = new StringBuilder();
+
+        Set<String> keys = prefs.getAll().keySet();
+        keys.remove("device_id");
+
+        bldr.append("set=");
+        bldr.append(TextUtils.join(",", keys));
+
+        for(Map.Entry<String, ?> entry: prefs.getAll().entrySet()) {
+            if(entry.getKey().equals("device_id"))
+                continue;
+
+            bldr.append("\n");
+            bldr.append(entry.getKey());
+            bldr.append("=");
+            bldr.append(entry.getValue().toString());
+        }
+
+        setFieldText(R.id.extraDataText, bldr.toString());
+    }
+
     private String getFieldText(int id) {
         EditText e = findViewById(id);
         return e.getText().toString();
+    }
+
+    private void setFieldText(int id, String text) {
+        EditText e = findViewById(id);
+        e.setText(text);
     }
 
     private String getCountryCode() {
