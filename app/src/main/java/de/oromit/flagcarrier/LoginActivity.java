@@ -195,6 +195,12 @@ public class LoginActivity extends AppCompatActivity implements Callback {
                 return;
             }
 
+            if(!prefs.contains(setting)) {
+                Toast.makeText(this, "Malformed settings: " + setting + " does not exist", Toast.LENGTH_LONG).show();
+                backToMain();
+                return;
+            }
+
             String val = tagData.get(setting);
             edit.putString(setting, val);
             resTxt.append(setting).append("=").append(val).append("\n");
