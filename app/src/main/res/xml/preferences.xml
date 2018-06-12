@@ -3,11 +3,18 @@
     xmlns:android="http://schemas.android.com/apk/res/android">
 
     <EditTextPreference
+        android:defaultValue="unset"
         android:inputType="textUri"
         android:key="target_url"
         android:selectAllOnFocus="true"
         android:singleLine="true"
         android:title="@string/target_url_setting_name" />
+    <EditTextPreference
+        android:defaultValue="Left,Mid,Right"
+        android:key="pos_avail"
+        android:selectAllOnFocus="true"
+        android:singleLine="true"
+        android:title="@string/pos_avail_setting_name" />
     <EditTextPreference
         android:defaultValue="some_android_device"
         android:inputType="text"

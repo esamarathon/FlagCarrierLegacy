@@ -43,7 +43,7 @@ class HttpManager {
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(mContext);
         String url = prefs.getString("target_url", null);
 
-        if(url == null || url.trim().isEmpty())
+        if(url == null || url.trim().isEmpty() || url.equals("unset"))
             throw new MissingSettingException("URL");
 
         JSONObject json = buildJson(action, tagData, prefs);

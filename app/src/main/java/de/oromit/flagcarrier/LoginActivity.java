@@ -31,6 +31,8 @@ public class LoginActivity extends AppCompatActivity implements Callback {
         setContentView(R.layout.activity_login);
         setTitle(R.string.login_title);
 
+        PreferenceManager.setDefaultValues(this, R.xml.preferences, false);
+
         httpManager = new HttpManager(this, this);
 
         Button b = findViewById(R.id.leftButton);

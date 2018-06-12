@@ -2,6 +2,7 @@ package de.oromit.flagcarrier;
 
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.preference.PreferenceManager;
 import android.provider.Settings;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
@@ -26,6 +27,8 @@ public class MainActivity extends AppCompatActivity implements Callback {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        PreferenceManager.setDefaultValues(this, R.xml.preferences, false);
 
         httpManager = new HttpManager(this, this);
 
