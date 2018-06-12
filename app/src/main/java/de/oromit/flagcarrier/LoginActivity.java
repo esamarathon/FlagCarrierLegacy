@@ -3,7 +3,6 @@ package de.oromit.flagcarrier;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.nfc.NdefMessage;
-import android.nfc.NdefRecord;
 import android.nfc.NfcAdapter;
 import android.os.Parcelable;
 import android.preference.PreferenceManager;
@@ -16,15 +15,8 @@ import android.widget.Toast;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.DataInputStream;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
 import java.util.Map;
-import java.util.zip.DataFormatException;
-import java.util.zip.Inflater;
 
 import okhttp3.Call;
 import okhttp3.Callback;
