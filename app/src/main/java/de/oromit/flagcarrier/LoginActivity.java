@@ -65,74 +65,18 @@ public class LoginActivity extends AppCompatActivity {
                 backToMain();
                 return;
             }
-            parseNdefMsg((NdefMessage)rawMsgs[0]);
+
+            NdefMessage msg = (NdefMessage)rawMsgs[0];
+
+            try {
+                tagData = TagManager.parseMessage(msg);
+                updateTextView();
+            } catch(TagManager.TagManagerException e) {
+                Toast.makeText(this, e.getMessage(), Toast.LENGTH_LONG).show();
+                backToMain();
+            }
         } else {
             Toast.makeText(this, "Give ma a tag!", Toast.LENGTH_LONG).show();
-            backToMain();
-        }
-    }
-
-    private void parseNdefMsg(NdefMessage msg) {
-        NdefRecord recs[] = msg.getRecords();
-
-        for(NdefRecord rec: recs) {
-            if(rec.getTnf() != NdefRecord.TNF_MIME_MEDIA)
-                continue;
-
-            String type = new String(rec.getType(), StandardCharsets.US_ASCII);
-
-            if(type.equals("application/vnd.de.oromit.flagcarrier")) {
-                handlePayload(rec.getPayload());
-                return;
-            }
-        }
-    }
-
-    private void handlePayload(byte[] payload) {
-        try {
-            Inflater infl = new Inflater();
-            infl.setInput(payload);
-
-            byte[] buf = new byte[256];
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-
-            while (!infl.finished()) {
-                int n = infl.inflate(buf);
-                baos.write(buf, 0, n);
-            }
-
-            infl.end();
-
-            handleData(baos.toByteArray());
-        } catch (DataFormatException e) {
-            Toast.makeText(this, "Invalid deflate data", Toast.LENGTH_LONG).show();
-            backToMain();
-        }
-    }
-
-    private void handleData(byte[] data) {
-        try {
-            ByteArrayInputStream bais = new ByteArrayInputStream(data);
-            DataInputStream dis = new DataInputStream(bais);
-            Map<String, String> newTagData = new HashMap<>();
-
-            while(dis.available() > 0) {
-                String key = dis.readUTF();
-                String value = dis.readUTF();
-                newTagData.put(key, value);
-            }
-
-            if (dis.available() != 0) {
-                Toast.makeText(this, "Leftover data", Toast.LENGTH_LONG).show();
-                backToMain();
-                return;
-            }
-
-            tagData = newTagData;
-
-            updateTextView();
-        } catch(IOException e) {
-            Toast.makeText(this, "Malformed data", Toast.LENGTH_LONG).show();
             backToMain();
         }
     }
@@ -234,9 +178,9 @@ public class LoginActivity extends AppCompatActivity {
                 .enqueue(new Callback() {
                     @Override
                     public void onFailure(Call call, IOException e) {
-                        runOnUiThread(()->{
-                            Toast.makeText(LoginActivity.this, "Request failed", Toast.LENGTH_LONG).show();
-                        });
+                        runOnUiThread(()->
+                            Toast.makeText(LoginActivity.this, "Request failed", Toast.LENGTH_LONG).show()
+                        );
                     }
 
                     @Override
@@ -249,9 +193,9 @@ public class LoginActivity extends AppCompatActivity {
                         int code = response.code();
 
                         if(code != 200) {
-                            runOnUiThread(()->{
-                                Toast.makeText(LoginActivity.this, "Error " + code + ": " + res, Toast.LENGTH_LONG).show();
-                            });
+                            runOnUiThread(()->
+                                Toast.makeText(LoginActivity.this, "Error " + code + ": " + res, Toast.LENGTH_LONG).show()
+                            );
                             return;
                         }
 

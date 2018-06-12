@@ -9,11 +9,19 @@ import android.nfc.tech.Ndef;
 import android.nfc.tech.NdefFormatable;
 import android.widget.Toast;
 
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.EOFException;
 import java.io.IOException;
+import java.io.UTFDataFormatException;
+import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
 import java.util.Map;
+import java.util.zip.DataFormatException;
 import java.util.zip.Deflater;
+import java.util.zip.Inflater;
 
 class TagManager {
     public static class TagManagerException extends Exception {
@@ -44,6 +52,25 @@ class TagManager {
                 NdefRecord.createMime(MIME_TYPE, data),
                 NdefRecord.createApplicationRecord(APP_REC)
         });
+    }
+
+    public static Map<String, String> parseMessage(NdefMessage msg) throws TagManagerException {
+        if(msg == null)
+            throw new TagManagerException("No message to parse");
+
+        NdefRecord recs[] = msg.getRecords();
+
+        for(NdefRecord rec: recs) {
+            if(rec.getTnf() != NdefRecord.TNF_MIME_MEDIA)
+                continue;
+
+            String type = new String(rec.getType(), StandardCharsets.US_ASCII);
+
+            if(type.equals("application/vnd.de.oromit.flagcarrier"))
+                return parsePayload(rec.getPayload());
+        }
+
+        throw new TagManagerException("No supported record in Ndef message");
     }
 
     private static boolean isSupported(Tag tag) {
@@ -167,4 +194,48 @@ class TagManager {
         if(closeFailed)
             throw new TagManagerException("NdefFormatable connection failed to close");
     }
+
+    private static Map<String,String> parsePayload(byte[] payload) throws TagManagerException {
+        try {
+            Inflater infl = new Inflater();
+            infl.setInput(payload);
+
+            byte[] buf = new byte[256];
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+
+            while (!infl.finished()) {
+                int n = infl.inflate(buf);
+                baos.write(buf, 0, n);
+            }
+
+            infl.end();
+
+            return parseData(baos.toByteArray());
+        } catch (DataFormatException e) {
+            throw new TagManagerException("Malformed deflate data");
+        }
+    }
+
+    private static Map<String,String> parseData(byte[] data) throws TagManagerException {
+        try {
+            ByteArrayInputStream bais = new ByteArrayInputStream(data);
+            DataInputStream dis = new DataInputStream(bais);
+            Map<String, String> tagDataMap = new HashMap<>();
+
+            while (dis.available() > 0) {
+                String key = dis.readUTF();
+                String value = dis.readUTF();
+                tagDataMap.put(key, value);
+            }
+
+            return tagDataMap;
+        } catch(UTFDataFormatException e) {
+            throw new TagManagerException("Malformed data on tag");
+        } catch(EOFException e) {
+            throw new TagManagerException("Incomplete data on tag");
+        } catch(IOException e) {
+            throw new TagManagerException("Parser IO error: " + e.getMessage());
+        }
+    }
+
 }
