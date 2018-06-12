@@ -5,6 +5,5 @@
     <item
         android:id="@+id/fillSetOption"
         android:title="@string/fill_set_write"
-        app:actionProviderClass="android.support.v7.app.MediaRouteActionProvider"
         app:showAsAction="never" />
 </menu>

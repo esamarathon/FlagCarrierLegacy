@@ -6,8 +6,8 @@ android {
         applicationId "de.oromit.flagcarrier"
         minSdkVersion 19
         targetSdkVersion 27
-        versionCode 5
-        versionName "1.4"
+        versionCode 6
+        versionName "1.5"
     }
     buildTypes {
         release {
@@ -27,6 +27,7 @@ dependencies {
     implementation 'com.android.support.constraint:constraint-layout:1.1.1'
     implementation 'com.android.support:design:27.1.1'
     implementation 'com.android.support:support-v4:27.1.1'
+    implementation 'com.android.support:support-core-utils:27.1.1'
     implementation 'com.hbb20:ccp:2.2.0'
     implementation 'com.squareup.okhttp3:okhttp:3.10.0'
 }
