@@ -40,18 +40,22 @@ class HttpManager {
     }
 
     public void doRequest(String action, Map<String, String> tagData) throws MissingSettingException, HttpManagerException {
+        doRequest(action, tagData, null);
+    }
+
+    public void doRequest(String action, Map<String, String> tagData, Map<String, String> extraData) throws MissingSettingException, HttpManagerException {
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(mContext);
         String url = prefs.getString("target_url", null);
 
         if(url == null || url.trim().isEmpty() || url.equals("unset"))
             throw new MissingSettingException("URL");
 
-        JSONObject json = buildJson(action, tagData, prefs);
+        JSONObject json = buildJson(action, tagData, extraData, prefs);
 
         postJson(url, json);
     }
 
-    private JSONObject buildJson(String action, Map<String, String> tagData, SharedPreferences prefs) throws HttpManagerException {
+    private JSONObject buildJson(String action, Map<String, String> tagData, Map<String, String> extraData, SharedPreferences prefs) throws HttpManagerException {
         String device_id = prefs.getString("device_id", "");
         String group_id = prefs.getString("group_id", "");
 
@@ -61,6 +65,12 @@ class HttpManager {
             json.put("action", action);
             json.put("device_id", device_id);
             json.put("group_id", group_id);
+
+            if(extraData != null) {
+                for (Map.Entry<String, String> entry : extraData.entrySet()) {
+                    json.put(entry.getKey(), entry.getValue());
+                }
+            }
 
             if(tagData != null) {
                 for (Map.Entry<String, String> entry : tagData.entrySet()) {
