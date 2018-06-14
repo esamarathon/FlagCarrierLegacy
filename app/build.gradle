@@ -6,8 +6,8 @@ android {
         applicationId "de.oromit.flagcarrier"
         minSdkVersion 19
         targetSdkVersion 27
-        versionCode 8
-        versionName "1.7"
+        versionCode 9
+        versionName "1.8"
     }
     buildTypes {
         release {

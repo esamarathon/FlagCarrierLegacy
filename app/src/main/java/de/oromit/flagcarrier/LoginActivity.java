@@ -124,10 +124,11 @@ public class LoginActivity extends AppCompatActivity implements Callback {
     }
 
     private void onDoLogin(String pos) {
-        tagData.put("position", pos);
+        HashMap<String, String> extraData = new HashMap<>();
+        extraData.put("position", pos);
 
         try {
-            httpManager.doRequest("login", tagData);
+            httpManager.doRequest("login", tagData, extraData);
         } catch(HttpManager.HttpManagerException e) {
             Toast.makeText(this, e.getMessage(), Toast.LENGTH_LONG).show();
         } catch(HttpManager.MissingSettingException e) {
