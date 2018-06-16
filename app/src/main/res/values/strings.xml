@@ -9,8 +9,11 @@
     <string name="initial_greeting">Scan Tag!</string>
     <string name="write_tag">Write Tag</string>
     <string name="write_tag_title">Write Tag</string>
+    <string name="manual_login_submit">Login</string>
+    <string name="manual_login_title">Manual Login</string>
     <string name="login_title">Login</string>
     <string name="clear_button">Clear</string>
+    <string name="manual_button">Manual Login</string>
     <string name="clear_conf_title">Clear?</string>
     <string name="clear_confirmation">This will clear the currently logged in users. Are you sure?</string>
     <string name="wt_disp_name">Display Name</string>

@@ -34,6 +34,9 @@ public class MainActivity extends AppCompatActivity implements Callback {
 
         Button clearButton = findViewById(R.id.clearButton);
         clearButton.setOnClickListener(v->onClear());
+
+        Button manualButton = findViewById(R.id.manualButton);
+        manualButton.setOnClickListener(v->onManualLogin());
     }
 
     @Override
@@ -93,6 +96,11 @@ public class MainActivity extends AppCompatActivity implements Callback {
         b.setPositiveButton(android.R.string.yes, (d,i)->onDoClear(i));
         b.setNegativeButton(android.R.string.no, (d,i)->onDoClear(i));
         b.show();
+    }
+
+    private void onManualLogin() {
+        Intent intent = new Intent(this, ManualLoginActivity.class);
+        startActivity(intent);
     }
 
     private void onDoClear(int i) {

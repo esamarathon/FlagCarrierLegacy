@@ -68,22 +68,28 @@ public class LoginActivity extends AppCompatActivity implements Callback {
         Intent intent = getIntent();
         if(NfcAdapter.ACTION_NDEF_DISCOVERED.equals(intent.getAction())) {
             Parcelable[] rawMsgs = intent.getParcelableArrayExtra(NfcAdapter.EXTRA_NDEF_MESSAGES);
-            if(rawMsgs == null || rawMsgs.length != 1) {
+            if (rawMsgs == null || rawMsgs.length != 1) {
                 Toast.makeText(this, "Can't handle this tag", Toast.LENGTH_LONG).show();
                 backToMain();
                 return;
             }
 
-            NdefMessage msg = (NdefMessage)rawMsgs[0];
+            NdefMessage msg = (NdefMessage) rawMsgs[0];
 
             try {
                 tagData = TagManager.parseMessage(msg);
                 updateTextView();
                 checkForSettings();
-            } catch(TagManager.TagManagerException e) {
+            } catch (TagManager.TagManagerException e) {
                 Toast.makeText(this, e.getMessage(), Toast.LENGTH_LONG).show();
                 backToMain();
             }
+        } else if("de.oromit.flagcarrier.ManualLoginActivity.Login".equals(intent.getAction())) {
+            @SuppressWarnings("unchecked")
+            HashMap<String, String> intentData = (HashMap)intent.getSerializableExtra("MANUAL_TAG_LOGIN_DATA");
+
+            tagData = intentData;
+            updateTextView();
         } else {
             Toast.makeText(this, "Give ma a tag!", Toast.LENGTH_LONG).show();
             backToMain();
