@@ -43,14 +43,14 @@ public class LoginActivity extends AppCompatActivity implements Callback {
     private void populateButtons() {
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
         LinearLayout layout = findViewById(R.id.buttonLayout);
+
         layout.removeAllViews();
 
         String[] pos_avail = prefs.getString("pos_avail", "left,mid,right").split(",");
 
         LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.WRAP_CONTENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT,
-                1.0f
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
         );
 
         for(String pos: pos_avail) {
