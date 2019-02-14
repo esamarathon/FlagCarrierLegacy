@@ -29,4 +29,19 @@
         android:selectAllOnFocus="true"
         android:singleLine="true"
         android:title="@string/group_id_setting_name" />
+    <EditTextPreference
+        android:inputType="text"
+        android:key="pub_key"
+        android:selectAllOnFocus="true"
+        android:singleLine="true"
+        android:title="@string/pub_key_setting_name" />
+    <EditTextPreference
+        android:inputType="text"
+        android:key="priv_key"
+        android:selectAllOnFocus="true"
+        android:singleLine="true"
+        android:title="@string/priv_key_setting_name" />
+    <Preference
+        android:key="gen_skpk"
+        android:title="@string/priv_key_gen_btn" />
 </PreferenceScreen>
