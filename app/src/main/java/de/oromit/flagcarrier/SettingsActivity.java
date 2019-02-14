@@ -1,9 +1,9 @@
 package de.oromit.flagcarrier;
 
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.preference.PreferenceFragmentCompat;
 import android.graphics.Color;
 import android.os.Bundle;
-import android.preference.PreferenceFragment;
 import android.view.View;
 
 public class SettingsActivity extends AppCompatActivity {
@@ -11,19 +11,17 @@ public class SettingsActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        getFragmentManager().beginTransaction()
+        getSupportFragmentManager().beginTransaction()
                 .replace(android.R.id.content, new SettingsFragment())
                 .commit();
     }
 
-    public static class SettingsFragment extends PreferenceFragment {
+    public static class SettingsFragment extends PreferenceFragmentCompat {
         @Override
-        public void onCreate(Bundle savedInstanceState) {
-            super.onCreate(savedInstanceState);
-
+        public void onCreatePreferences(Bundle savedInstanceState, String rootKey) {
             setHasOptionsMenu(false);
 
-            addPreferencesFromResource(R.xml.preferences);
+            setPreferencesFromResource(R.xml.preferences, rootKey);
         }
 
         @Override

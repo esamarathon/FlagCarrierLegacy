@@ -159,7 +159,7 @@ public class WriteTagActivity extends AppCompatActivity {
         return kvMap;
     }
 
-    public void onDoWriteTag(View v) {
+    private void onDoWriteTag(View v) {
         mWriteMsg = null;
 
         Map<String, String> kvMap = getValidatedDataMap();

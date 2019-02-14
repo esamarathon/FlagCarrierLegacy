@@ -23,8 +23,5 @@
     <string name="wt_twitter">Twitter Handle</string>
     <string name="wt_extra_data">Extra data (lines of key=value)</string>
     <string name="wt_write_tag_button">Write Tag</string>
-    <string name="left_button">Left</string>
-    <string name="mid_button">Middle</string>
-    <string name="right_button">Right</string>
     <string name="fill_set_write">Settings Template</string>
 </resources>

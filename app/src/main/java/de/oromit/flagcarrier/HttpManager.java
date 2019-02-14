@@ -30,9 +30,9 @@ class HttpManager {
         }
     }
 
-    private OkHttpClient mHttpClient = new OkHttpClient();
-    private Callback mCallback;
-    private Context mContext;
+    private final OkHttpClient mHttpClient = new OkHttpClient();
+    private final Callback mCallback;
+    private final Context mContext;
 
     public HttpManager(Context context, Callback callback) {
         mContext = context;

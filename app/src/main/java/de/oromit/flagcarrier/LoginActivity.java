@@ -23,8 +23,8 @@ import okhttp3.Response;
 import okhttp3.ResponseBody;
 
 public class LoginActivity extends AppCompatActivity implements Callback {
-    HttpManager httpManager;
-    Map<String, String> tagData;
+    private HttpManager httpManager;
+    private Map<String, String> tagData;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {

@@ -21,7 +21,7 @@ import okhttp3.Response;
 import okhttp3.ResponseBody;
 
 public class MainActivity extends AppCompatActivity implements Callback {
-    HttpManager httpManager;
+    private HttpManager httpManager;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
