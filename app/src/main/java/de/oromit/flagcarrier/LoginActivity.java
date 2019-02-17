@@ -4,17 +4,28 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.nfc.NdefMessage;
 import android.nfc.NfcAdapter;
+import android.nfc.Tag;
+import android.nfc.tech.MifareClassic;
+import android.nfc.tech.MifareUltralight;
+import android.nfc.tech.NfcA;
+import android.util.Base64;
 import android.os.Parcelable;
 import android.preference.PreferenceManager;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.text.TextUtils;
 import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import org.w3c.dom.Text;
+
 import java.io.IOException;
+import java.lang.reflect.Array;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import okhttp3.Call;
@@ -76,6 +87,29 @@ public class LoginActivity extends AppCompatActivity implements Callback {
 
             NdefMessage msg = (NdefMessage) rawMsgs[0];
 
+            Tag tag = intent.getParcelableExtra(NfcAdapter.EXTRA_TAG);
+
+            byte[] uid = tag.getId();
+            List<String> techs = Arrays.asList(tag.getTechList());
+
+            byte[] nuid = new byte[uid.length + 1];
+            System.arraycopy(uid, 0, nuid, 0, uid.length);
+
+            if (techs.contains(MifareUltralight.class.getCanonicalName())) {
+                nuid[nuid.length - 1] = (byte)0xAA;
+            } else if (techs.contains(MifareClassic.class.getCanonicalName())) {
+                nuid[nuid.length - 1] = (byte)0xBB;
+            } else {
+                nuid = uid;
+            }
+
+            TagManager.setExtraSignData(nuid);
+
+            SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
+            String pk = prefs.getString("pub_key", null);
+            if (pk != null && pk.length() != 0)
+                TagManager.setPublicKey(Base64.decode(pk, Base64.DEFAULT));
+
             try {
                 tagData = TagManager.parseMessage(msg);
                 updateTextView();
@@ -83,6 +117,9 @@ public class LoginActivity extends AppCompatActivity implements Callback {
             } catch (TagManager.TagManagerException e) {
                 Toast.makeText(this, e.getMessage(), Toast.LENGTH_LONG).show();
                 backToMain();
+            } finally {
+                TagManager.setExtraSignData(null);
+                TagManager.setPublicKey(null);
             }
         } else if("de.oromit.flagcarrier.ManualLoginActivity.Login".equals(intent.getAction())) {
             @SuppressWarnings("unchecked")

@@ -7,6 +7,9 @@ import android.nfc.Tag;
 import android.nfc.TagLostException;
 import android.nfc.tech.Ndef;
 import android.nfc.tech.NdefFormatable;
+import android.util.Base64;
+import android.util.Log;
+import android.widget.Toast;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -31,6 +34,18 @@ class TagManager {
 
     private static final String MIME_TYPE = "application/vnd.de.oromit.flagcarrier";
     private static final String APP_REC = "de.oromit.flagcarrier";
+
+    private static byte[] extraSignData = null;
+    private static byte[] publicKey = null;
+
+    public static void setExtraSignData(byte[] data)
+    {
+        extraSignData = data;
+    }
+
+    public static void setPublicKey(byte[] key) {
+        publicKey = key;
+    }
 
     public static void writeToTag(Tag tag, NdefMessage msg) throws TagManagerException {
         if(!isSupported(tag))
@@ -222,8 +237,22 @@ class TagManager {
             Map<String, String> tagDataMap = new HashMap<>();
 
             while (dis.available() > 0) {
+                int initPos = data.length - dis.available();
                 String key = dis.readUTF();
                 String value = dis.readUTF();
+
+                if (key.equals("sig_valid"))
+                    continue;
+
+                if (initPos == 0 && key.equals("sig") && publicKey != null && publicKey.length != 0) {
+                    byte[] msg = new byte[dis.available() + (extraSignData != null ? extraSignData.length : 0)];
+                    System.arraycopy(data, data.length - dis.available(), msg, 0, dis.available());
+                    if (extraSignData != null)
+                        System.arraycopy(extraSignData, 0, msg, dis.available(), extraSignData.length);
+                    byte[] sig = Base64.decode(value, Base64.DEFAULT);
+                    tagDataMap.put("sig_valid", Boolean.toString(CryptoManager.verifyDetached(sig, msg, publicKey)));
+                }
+
                 tagDataMap.put(key, value);
             }
 
@@ -234,6 +263,8 @@ class TagManager {
             throw new TagManagerException("Incomplete data on tag");
         } catch(IOException e) {
             throw new TagManagerException("Parser IO error: " + e.getMessage());
+        } catch(CryptoManager.CryptoManagerException e) {
+            throw new TagManagerException("Crypto error: " + e.getMessage());
         }
     }
 
