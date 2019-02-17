@@ -2,6 +2,7 @@ package de.oromit.flagcarrier;
 
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.preference.PreferenceManager;
 import android.provider.Settings;
 import android.support.v7.app.AlertDialog;
@@ -10,6 +11,7 @@ import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
+import android.view.View;
 import android.widget.Button;
 import android.widget.Toast;
 
@@ -37,6 +39,11 @@ public class MainActivity extends AppCompatActivity implements Callback {
 
         Button manualButton = findViewById(R.id.manualButton);
         manualButton.setOnClickListener(v->onManualLogin());
+
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
+        String pk = prefs.getString("pub_key", null);
+        if (pk != null && !pk.isEmpty())
+            manualButton.setVisibility(View.INVISIBLE);
     }
 
     @Override

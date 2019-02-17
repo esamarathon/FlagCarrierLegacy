@@ -112,6 +112,16 @@ public class LoginActivity extends AppCompatActivity implements Callback {
 
             try {
                 tagData = TagManager.parseMessage(msg);
+
+                if (TagManager.hasPublicKey() && tagData.containsKey("sig_valid")) {
+                    boolean sigValid = Boolean.parseBoolean(tagData.get("sig_valid"));
+                    if (!sigValid) {
+                        Toast.makeText(this, "Invalid signature!", Toast.LENGTH_LONG).show();
+                        backToMain();
+                        return;
+                    }
+                }
+
                 updateTextView();
                 checkForSettings();
             } catch (TagManager.TagManagerException e) {
@@ -149,7 +159,7 @@ public class LoginActivity extends AppCompatActivity implements Callback {
                 bldr.append(knownIdx.get(entry.getKey()));
                 bldr.append(entry.getValue());
                 bldr.append("\n");
-            } else {
+            } else if (!entry.getKey().equals("sig") && !entry.getKey().equals("sig_valid")) {
                 other.append(entry.getKey());
                 other.append("=");
                 other.append(entry.getValue());

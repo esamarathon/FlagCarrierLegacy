@@ -47,6 +47,10 @@ class TagManager {
         publicKey = key;
     }
 
+    public static boolean hasPublicKey() {
+        return publicKey != null && publicKey.length != 0;
+    }
+
     public static void writeToTag(Tag tag, NdefMessage msg) throws TagManagerException {
         if(!isSupported(tag))
             throw new TagManagerException("Tag is not supported");
