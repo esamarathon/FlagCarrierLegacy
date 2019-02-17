@@ -27,7 +27,7 @@ public class SettingsActivity extends AppCompatActivity {
 
             setPreferencesFromResource(R.xml.preferences, rootKey);
 
-            findPreference("gen_skpk").setOnPreferenceClickListener(preference -> {
+            /* findPreference("gen_skpk").setOnPreferenceClickListener(preference -> {
                 AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
                 builder.setMessage("Overwrite existing keypair?");
                 builder.setPositiveButton("Yes", (d, p) -> {genNewKeypair(); d.dismiss();});
@@ -37,7 +37,7 @@ public class SettingsActivity extends AppCompatActivity {
                 dialog.show();
 
                 return true;
-            });
+            }); */
         }
 
         private void genNewKeypair() {
