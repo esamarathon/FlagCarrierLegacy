@@ -76,7 +76,7 @@ class TagManager {
         if(msg == null)
             throw new TagManagerException("No message to parse");
 
-        NdefRecord recs[] = msg.getRecords();
+        NdefRecord[] recs = msg.getRecords();
 
         for(NdefRecord rec: recs) {
             if(rec.getTnf() != NdefRecord.TNF_MIME_MEDIA)

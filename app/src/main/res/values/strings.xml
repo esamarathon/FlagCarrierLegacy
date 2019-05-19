@@ -27,4 +27,6 @@
     <string name="wt_extra_data">Extra data (lines of key=value)</string>
     <string name="wt_write_tag_button">Write Tag</string>
     <string name="fill_set_write">Settings Template</string>
+    <string name="hceservicedesc">FlagCarrier HCE Service</string>
+    <string name="hceaiddescription">FlagCarrier HCE AID</string>
 </resources>
