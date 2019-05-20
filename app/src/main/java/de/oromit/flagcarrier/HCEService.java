@@ -34,6 +34,8 @@ public class HCEService extends HostApduService {
     private static Map<String, String> dataToPublish = null;
     private static Map<String, String> dataToPublishOnce = null;
 
+    private TagManager tagManager = new TagManager();
+
     public static void publishData(Map<String, String> data)
     {
         dataToPublish = data;
@@ -104,10 +106,10 @@ public class HCEService extends HostApduService {
         byte[] challenge = Arrays.copyOfRange(commandApdu, 5, 5 + length);
 
         try {
-            TagManager.setExtraSignData(challenge);
-            NdefMessage msg = TagManager.generateMessage(kvData);
-            TagManager.setExtraSignData(null);
+            tagManager.loadKeysFromPrefs(this);
+            tagManager.setExtraSignData(challenge);
 
+            NdefMessage msg = tagManager.generateMessage(kvData);
             ndefData = msg.toByteArray();
         } catch(TagManager.TagManagerException e) {
             Log.e(TAG, e.getMessage());

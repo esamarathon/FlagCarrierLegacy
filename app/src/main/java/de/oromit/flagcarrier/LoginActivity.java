@@ -5,27 +5,17 @@ import android.content.SharedPreferences;
 import android.nfc.NdefMessage;
 import android.nfc.NfcAdapter;
 import android.nfc.Tag;
-import android.nfc.tech.MifareClassic;
-import android.nfc.tech.MifareUltralight;
-import android.nfc.tech.NfcA;
-import android.util.Base64;
 import android.os.Parcelable;
 import android.preference.PreferenceManager;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.text.TextUtils;
 import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import org.w3c.dom.Text;
-
 import java.io.IOException;
-import java.lang.reflect.Array;
-import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import okhttp3.Call;
@@ -34,8 +24,9 @@ import okhttp3.Response;
 import okhttp3.ResponseBody;
 
 public class LoginActivity extends AppCompatActivity implements Callback {
-    private HttpManager httpManager;
-    private Map<String, String> tagData;
+    private HttpManager mHttpManager;
+    private Map<String, String> mTagData;
+    private TagManager mTagManager;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -45,7 +36,9 @@ public class LoginActivity extends AppCompatActivity implements Callback {
 
         PreferenceManager.setDefaultValues(this, R.xml.preferences, false);
 
-        httpManager = new HttpManager(this, this);
+        mHttpManager = new HttpManager(this, this);
+
+        mTagManager = new TagManager();
 
         populateButtons();
         parseIntent();
@@ -85,36 +78,17 @@ public class LoginActivity extends AppCompatActivity implements Callback {
                 return;
             }
 
-            NdefMessage msg = (NdefMessage) rawMsgs[0];
-
+            NdefMessage msg = (NdefMessage)rawMsgs[0];
             Tag tag = intent.getParcelableExtra(NfcAdapter.EXTRA_TAG);
 
-            byte[] uid = tag.getId();
-            List<String> techs = Arrays.asList(tag.getTechList());
-
-            byte[] nuid = new byte[uid.length + 1];
-            System.arraycopy(uid, 0, nuid, 0, uid.length);
-
-            if (techs.contains(MifareUltralight.class.getCanonicalName())) {
-                nuid[nuid.length - 1] = (byte)0xAA;
-            } else if (techs.contains(MifareClassic.class.getCanonicalName())) {
-                nuid[nuid.length - 1] = (byte)0xBB;
-            } else {
-                nuid = uid;
-            }
-
-            TagManager.setExtraSignData(nuid);
-
-            SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
-            String pk = prefs.getString("pub_key", null);
-            if (pk != null && pk.length() != 0)
-                TagManager.setPublicKey(Base64.decode(pk, Base64.DEFAULT));
+            mTagManager.setExtraSignDataFromTag(tag);
+            mTagManager.loadKeysFromPrefs(this);
 
             try {
-                tagData = TagManager.parseMessage(msg);
+                mTagData = mTagManager.parseMessage(msg);
 
-                if (TagManager.hasPublicKey() && tagData.containsKey("sig_valid")) {
-                    boolean sigValid = Boolean.parseBoolean(tagData.get("sig_valid"));
+                if (mTagManager.hasPublicKey() && mTagData.containsKey("sig_valid")) {
+                    boolean sigValid = Boolean.parseBoolean(mTagData.get("sig_valid"));
                     if (!sigValid) {
                         Toast.makeText(this, "Invalid signature!", Toast.LENGTH_LONG).show();
                         backToMain();
@@ -128,14 +102,15 @@ public class LoginActivity extends AppCompatActivity implements Callback {
                 Toast.makeText(this, e.getMessage(), Toast.LENGTH_LONG).show();
                 backToMain();
             } finally {
-                TagManager.setExtraSignData(null);
-                TagManager.setPublicKey(null);
+                mTagManager.setExtraSignData(null);
+                mTagManager.setPublicKey(null);
+                mTagManager.setPrivateKey(null);
             }
         } else if("de.oromit.flagcarrier.ManualLoginActivity.Login".equals(intent.getAction())) {
             @SuppressWarnings("unchecked")
             HashMap<String, String> intentData = (HashMap)intent.getSerializableExtra("MANUAL_TAG_LOGIN_DATA");
 
-            tagData = intentData;
+            mTagData = intentData;
             updateTextView();
         } else {
             Toast.makeText(this, "Give ma a tag!", Toast.LENGTH_LONG).show();
@@ -154,7 +129,7 @@ public class LoginActivity extends AppCompatActivity implements Callback {
         knownIdx.put("twitch_name", "Twitch Name: ");
         knownIdx.put("twitter_handle", "Twitter Handle: ");
 
-        for (Map.Entry<String, String> entry : tagData.entrySet()) {
+        for (Map.Entry<String, String> entry : mTagData.entrySet()) {
             if(knownIdx.containsKey(entry.getKey())) {
                 bldr.append(knownIdx.get(entry.getKey()));
                 bldr.append(entry.getValue());
@@ -181,7 +156,7 @@ public class LoginActivity extends AppCompatActivity implements Callback {
         extraData.put("position", pos);
 
         try {
-            httpManager.doRequest("login", tagData, extraData);
+            mHttpManager.doRequest("login", mTagData, extraData);
         } catch(HttpManager.HttpManagerException e) {
             Toast.makeText(this, e.getMessage(), Toast.LENGTH_LONG).show();
         } catch(HttpManager.MissingSettingException e) {
@@ -224,16 +199,16 @@ public class LoginActivity extends AppCompatActivity implements Callback {
         final String trigger_dsp_name = "set";
         final String trigger_name = "set";
 
-        if(!tagData.containsKey(display_name))
+        if(!mTagData.containsKey(display_name))
             return;
 
-        if(!tagData.get(display_name).equals(trigger_dsp_name))
+        if(!mTagData.get(display_name).equals(trigger_dsp_name))
             return;
 
-        if(!tagData.containsKey(trigger_name))
+        if(!mTagData.containsKey(trigger_name))
             return;
 
-        String set = tagData.get(trigger_name);
+        String set = mTagData.get(trigger_name);
         String[] settings = set.split(",");
 
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
@@ -243,7 +218,7 @@ public class LoginActivity extends AppCompatActivity implements Callback {
         resTxt.append("Applied settings:\n");
 
         for(String setting: settings) {
-            if(!tagData.containsKey(setting)) {
+            if(!mTagData.containsKey(setting)) {
                 Toast.makeText(this, "Malformed settings: " + setting + " missing on tag", Toast.LENGTH_LONG).show();
                 backToMain();
                 return;
@@ -255,7 +230,7 @@ public class LoginActivity extends AppCompatActivity implements Callback {
                 return;
             }
 
-            String val = tagData.get(setting);
+            String val = mTagData.get(setting);
             edit.putString(setting, val);
             resTxt.append(setting).append("=").append(val).append("\n");
         }

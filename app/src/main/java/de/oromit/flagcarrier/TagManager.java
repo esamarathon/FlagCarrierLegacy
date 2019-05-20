@@ -1,12 +1,17 @@
 package de.oromit.flagcarrier;
 
+import android.content.Context;
+import android.content.SharedPreferences;
 import android.nfc.FormatException;
 import android.nfc.NdefMessage;
 import android.nfc.NdefRecord;
 import android.nfc.Tag;
 import android.nfc.TagLostException;
+import android.nfc.tech.MifareClassic;
+import android.nfc.tech.MifareUltralight;
 import android.nfc.tech.Ndef;
 import android.nfc.tech.NdefFormatable;
+import android.preference.PreferenceManager;
 import android.util.Base64;
 import android.util.Log;
 import android.widget.Toast;
@@ -19,7 +24,9 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.io.UTFDataFormatException;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.zip.DataFormatException;
 import java.util.zip.Deflater;
@@ -35,23 +42,65 @@ class TagManager {
     private static final String MIME_TYPE = "application/vnd.de.oromit.flagcarrier";
     private static final String APP_REC = "de.oromit.flagcarrier";
 
-    private static byte[] extraSignData = null;
-    private static byte[] publicKey = null;
+    private byte[] extraSignData = null;
+    private byte[] publicKey = null;
+    private byte[] privateKey = null;
 
-    public static void setExtraSignData(byte[] data)
-    {
+    public void setExtraSignData(byte[] data) {
         extraSignData = data;
     }
 
-    public static void setPublicKey(byte[] key) {
+    public boolean hasExtraSignData() {
+        return extraSignData != null && extraSignData.length != 0;
+    }
+
+    public void setPublicKey(byte[] key) {
         publicKey = key;
     }
 
-    public static boolean hasPublicKey() {
+    public boolean hasPublicKey() {
         return publicKey != null && publicKey.length != 0;
     }
 
-    public static void writeToTag(Tag tag, NdefMessage msg) throws TagManagerException {
+    public void setPrivateKey(byte[] data) {
+        privateKey = data;
+    }
+
+    public boolean hasPrivateKey() {
+        return privateKey != null && privateKey.length != 0;
+    }
+
+    public void loadKeysFromPrefs(Context ctx) {
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(ctx);
+
+        String pk = prefs.getString("pub_key", null);
+        if (pk != null && pk.length() != 0)
+            setPublicKey(Base64.decode(pk, Base64.DEFAULT));
+
+        String sk = prefs.getString("priv_key", null);
+        if (sk != null && sk.length() != 0)
+            setPrivateKey(Base64.decode(sk, Base64.DEFAULT));
+    }
+
+    public void setExtraSignDataFromTag(Tag tag) {
+        byte[] uid = tag.getId();
+        List<String> techs = Arrays.asList(tag.getTechList());
+
+        byte[] nuid = new byte[uid.length + 1];
+        System.arraycopy(uid, 0, nuid, 0, uid.length);
+
+        if (techs.contains(MifareUltralight.class.getCanonicalName())) {
+            nuid[nuid.length - 1] = (byte)0xAA;
+        } else if (techs.contains(MifareClassic.class.getCanonicalName())) {
+            nuid[nuid.length - 1] = (byte)0xBB;
+        } else {
+            nuid = uid;
+        }
+
+        setExtraSignData(nuid);
+    }
+
+    public void writeToTag(Tag tag, NdefMessage msg) throws TagManagerException {
         if(!isSupported(tag))
             throw new TagManagerException("Tag is not supported");
 
@@ -62,7 +111,7 @@ class TagManager {
             formatNdef(tag, msg);
     }
 
-    public static NdefMessage generateMessage(Map<String, String> inputData) throws TagManagerException {
+    public NdefMessage generateMessage(Map<String, String> inputData) throws TagManagerException {
         byte[] rawData = generateRawData(inputData);
         byte[] data = compressRawData(rawData);
 
@@ -72,7 +121,7 @@ class TagManager {
         });
     }
 
-    public static Map<String, String> parseMessage(NdefMessage msg) throws TagManagerException {
+    public Map<String, String> parseMessage(NdefMessage msg) throws TagManagerException {
         if(msg == null)
             throw new TagManagerException("No message to parse");
 
@@ -91,7 +140,7 @@ class TagManager {
         throw new TagManagerException("No supported record in Ndef message");
     }
 
-    private static boolean isSupported(Tag tag) {
+    public static boolean isSupported(Tag tag) {
         for(String s: tag.getTechList()) {
             if(s.equals("android.nfc.tech.NdefFormatable"))
                 return true;
@@ -101,7 +150,7 @@ class TagManager {
         return false;
     }
 
-    private static byte[] generateRawData(Map<String, String> kvMap) throws TagManagerException {
+    private byte[] generateRawData(Map<String, String> kvMap) throws TagManagerException {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         DataOutputStream dos = new DataOutputStream(baos);
 
@@ -117,8 +166,43 @@ class TagManager {
 
             dos.flush();
         } catch (IOException e) {
-            e.printStackTrace();
             throw new TagManagerException("Data generation failed");
+        }
+
+        byte[] rawData = baos.toByteArray();
+
+        if (!hasPrivateKey())
+            return rawData;
+
+        byte[] signData = rawData;
+        if (hasExtraSignData())
+        {
+            signData = new byte[rawData.length + extraSignData.length];
+            System.arraycopy(rawData, 0, signData, 0, rawData.length);
+            System.arraycopy(extraSignData, 0, signData, rawData.length, extraSignData.length);
+        }
+
+        byte[] sig;
+
+        try {
+            sig = CryptoManager.signDetached(signData, privateKey);
+        } catch(CryptoManager.CryptoManagerException e) {
+            throw new TagManagerException("Crypto signing error: " + e.getMessage());
+        }
+
+        String sigStr = Base64.encodeToString(sig, Base64.NO_WRAP);
+
+        baos.reset();
+        dos = new DataOutputStream(baos);
+
+        try {
+            dos.writeUTF("sig");
+            dos.writeUTF(sigStr);
+            dos.write(rawData);
+
+            dos.flush();
+        } catch (IOException e) {
+            throw new TagManagerException("Sig writeout failed");
         }
 
         return baos.toByteArray();
@@ -142,7 +226,7 @@ class TagManager {
         return baos.toByteArray();
     }
 
-    private static boolean writeNdef(Tag tag, NdefMessage msg) throws TagManagerException {
+    private boolean writeNdef(Tag tag, NdefMessage msg) throws TagManagerException {
         Ndef ndef = Ndef.get(tag);
         if(ndef == null)
             return false;
@@ -213,7 +297,7 @@ class TagManager {
             throw new TagManagerException("NdefFormatable connection failed to close");
     }
 
-    private static Map<String,String> parsePayload(byte[] payload) throws TagManagerException {
+    private Map<String,String> parsePayload(byte[] payload) throws TagManagerException {
         try {
             Inflater infl = new Inflater();
             infl.setInput(payload);
@@ -234,7 +318,7 @@ class TagManager {
         }
     }
 
-    private static Map<String,String> parseData(byte[] data) throws TagManagerException {
+    private Map<String,String> parseData(byte[] data) throws TagManagerException {
         try {
             ByteArrayInputStream bais = new ByteArrayInputStream(data);
             DataInputStream dis = new DataInputStream(bais);
@@ -248,13 +332,17 @@ class TagManager {
                 if (key.equals("sig_valid"))
                     continue;
 
-                if (initPos == 0 && key.equals("sig") && publicKey != null && publicKey.length != 0) {
-                    byte[] msg = new byte[dis.available() + (extraSignData != null ? extraSignData.length : 0)];
+                if (initPos == 0 && key.equals("sig") && hasPublicKey()) {
+                    byte[] msg = new byte[dis.available() + (hasExtraSignData() ? extraSignData.length : 0)];
+
                     System.arraycopy(data, data.length - dis.available(), msg, 0, dis.available());
-                    if (extraSignData != null)
+                    if (hasExtraSignData())
                         System.arraycopy(extraSignData, 0, msg, dis.available(), extraSignData.length);
+
                     byte[] sig = Base64.decode(value, Base64.DEFAULT);
-                    tagDataMap.put("sig_valid", Boolean.toString(CryptoManager.verifyDetached(sig, msg, publicKey)));
+                    boolean sigValid = CryptoManager.verifyDetached(sig, msg, publicKey);
+
+                    tagDataMap.put("sig_valid", Boolean.toString(sigValid));
                 }
 
                 tagDataMap.put(key, value);

@@ -35,7 +35,7 @@
         android:selectAllOnFocus="true"
         android:singleLine="true"
         android:title="@string/pub_key_setting_name" />
-    <!-- <EditTextPreference
+    <EditTextPreference
         android:inputType="text"
         android:key="priv_key"
         android:selectAllOnFocus="true"
@@ -43,5 +43,5 @@
         android:title="@string/priv_key_setting_name" />
     <Preference
         android:key="gen_skpk"
-        android:title="@string/priv_key_gen_btn" /> -->
+        android:title="@string/priv_key_gen_btn" />
 </PreferenceScreen>

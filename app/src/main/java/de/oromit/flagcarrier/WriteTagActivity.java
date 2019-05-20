@@ -29,7 +29,8 @@ public class WriteTagActivity extends AppCompatActivity {
     private NfcAdapter mAdapter;
     private PendingIntent mPendingIntent;
     private IntentFilter[] mWriteTagFilters;
-    private NdefMessage mWriteMsg;
+    private Map<String, String> mWriteData;
+    private TagManager mTagManager;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -40,6 +41,8 @@ public class WriteTagActivity extends AppCompatActivity {
 
         Button writeButton = findViewById(R.id.writeTagButton);
         writeButton.setOnClickListener(this::onDoWriteTag);
+
+        mTagManager = new TagManager();
 
         mAdapter = NfcAdapter.getDefaultAdapter(this);
 
@@ -125,7 +128,7 @@ public class WriteTagActivity extends AppCompatActivity {
 
         if(dsplname.isEmpty()) {
             Toast.makeText(this, "A display name is required", Toast.LENGTH_SHORT).show();
-            mWriteMsg = null;
+            mWriteData = null;
             return null;
         }
 
@@ -160,18 +163,8 @@ public class WriteTagActivity extends AppCompatActivity {
     }
 
     private void onDoWriteTag(View v) {
-        mWriteMsg = null;
-
-        Map<String, String> kvMap = getValidatedDataMap();
-        if(kvMap == null)
-            return;
-
-        try {
-            mWriteMsg = TagManager.generateMessage(kvMap);
-            Toast.makeText(this, "Scan tag now!", Toast.LENGTH_SHORT).show();
-        } catch(TagManager.TagManagerException e) {
-            Toast.makeText(this, e.getMessage(), Toast.LENGTH_LONG).show();
-        }
+        mWriteData = getValidatedDataMap();
+        Toast.makeText(this, "Scan tag now!", Toast.LENGTH_SHORT).show();
     }
 
     @Override
@@ -206,13 +199,33 @@ public class WriteTagActivity extends AppCompatActivity {
                 || NfcAdapter.ACTION_NDEF_DISCOVERED.equals(a)
                 || NfcAdapter.ACTION_TECH_DISCOVERED.equals(a)) {
             Tag tag = intent.getParcelableExtra(NfcAdapter.EXTRA_TAG);
-            try {
-                TagManager.writeToTag(tag, mWriteMsg);
-                mWriteMsg = null;
-                Toast.makeText(this, "Success", Toast.LENGTH_LONG).show();
-            } catch(TagManager.TagManagerException e) {
-                Toast.makeText(this, e.getMessage(), Toast.LENGTH_LONG).show();
-            }
+            writeDataToTag(tag);
+        }
+    }
+
+    private void writeDataToTag(Tag tag)
+    {
+        if (mWriteData == null)
+        {
+            Toast.makeText(this, "No data to be written!", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        try {
+            mTagManager.loadKeysFromPrefs(this);
+            mTagManager.setExtraSignDataFromTag(tag);
+
+            NdefMessage msg = mTagManager.generateMessage(mWriteData);
+            mTagManager.writeToTag(tag, msg);
+
+            mWriteData = null;
+            Toast.makeText(this, "Success", Toast.LENGTH_LONG).show();
+        } catch(TagManager.TagManagerException e) {
+            Toast.makeText(this, e.getMessage(), Toast.LENGTH_LONG).show();
+        } finally {
+            mTagManager.setPrivateKey(null);
+            mTagManager.setPublicKey(null);
+            mTagManager.setExtraSignData(null);
         }
     }
 }

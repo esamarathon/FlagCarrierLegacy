@@ -1,7 +1,9 @@
 package de.oromit.flagcarrier;
 
+import android.content.Context;
 import android.content.SharedPreferences;
 import android.preference.PreferenceManager;
+import android.support.annotation.NonNull;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.preference.PreferenceFragmentCompat;
@@ -27,17 +29,24 @@ public class SettingsActivity extends AppCompatActivity {
 
             setPreferencesFromResource(R.xml.preferences, rootKey);
 
-            /* findPreference("gen_skpk").setOnPreferenceClickListener(preference -> {
-                AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
+            findPreference("gen_skpk").setOnPreferenceClickListener(preference -> {
+                Context ctx = getContext();
+                if (ctx == null)
+                    return false;
+
+                AlertDialog.Builder builder = new AlertDialog.Builder(ctx);
                 builder.setMessage("Overwrite existing keypair?");
-                builder.setPositiveButton("Yes", (d, p) -> {genNewKeypair(); d.dismiss();});
+                builder.setPositiveButton("Yes", (d, p) -> {
+                    genNewKeypair();
+                    d.dismiss();
+                });
                 builder.setNegativeButton("No", (d, p) -> d.dismiss());
 
                 AlertDialog dialog = builder.create();
                 dialog.show();
 
                 return true;
-            }); */
+            });
         }
 
         private void genNewKeypair() {
@@ -51,11 +60,12 @@ public class SettingsActivity extends AppCompatActivity {
 
             edit.apply();
 
-            getActivity().onBackPressed();
+            if (getActivity() != null)
+                getActivity().onBackPressed();
         }
 
         @Override
-        public void onViewCreated(View view, Bundle savedInstanceState) {
+        public void onViewCreated(@NonNull View view, Bundle savedInstanceState) {
             super.onViewCreated(view, savedInstanceState);
 
             view.setBackgroundColor(Color.WHITE);
