@@ -52,8 +52,6 @@ public class HCEService extends HostApduService {
         if (commandApdu == null || commandApdu.length < 5)
             return STATUS_FAILED;
 
-        Log.d(TAG, "Handling APDU " + String.format("%02x", commandApdu[1]));
-
         if (commandApdu[0] != DEFAULT_CLA)
             return CLA_NOT_SUPPORTED;
 
@@ -101,7 +99,7 @@ public class HCEService extends HostApduService {
             kvData = dataToPublishOnce;
 
         if (kvData == null)
-            return msgResponse(FILE_NOT_FOUND, "no data");
+            return FILE_NOT_FOUND;
 
         byte[] challenge = Arrays.copyOfRange(commandApdu, 5, 5 + length);
 
@@ -147,8 +145,10 @@ public class HCEService extends HostApduService {
         if (end > highestReadEnd)
             highestReadEnd = end;
 
-        byte[] res = Arrays.copyOfRange(ndefData, offset, end);
-        return dataResponse(STATUS_SUCCESS, res);
+        byte[] res = Arrays.copyOfRange(ndefData, offset, end + 2);
+        System.arraycopy(STATUS_SUCCESS, 0, res, res.length - 2, 2);
+
+        return res;
     }
 
     @Override
@@ -161,25 +161,5 @@ public class HCEService extends HostApduService {
         }
 
         ndefData = null;
-    }
-
-    public static String byteArrayToHex(byte[] a) {
-        StringBuilder sb = new StringBuilder(a.length * 2);
-        for(byte b: a)
-            sb.append(String.format("%02x", b));
-        return sb.toString();
-    }
-
-    private static byte[] msgResponse(byte[] status, String msg)
-    {
-        return dataResponse(status, msg.getBytes(StandardCharsets.UTF_8));
-    }
-
-    private static byte[] dataResponse(byte[] status, byte[] data)
-    {
-        byte[] res = new byte[data.length + status.length];
-        System.arraycopy(data, 0, res, 0, data.length);
-        System.arraycopy(status, 0, res, data.length, status.length);
-        return res;
     }
 }
